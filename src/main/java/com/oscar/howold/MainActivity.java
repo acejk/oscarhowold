@@ -4,6 +4,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -19,6 +21,8 @@ import android.widget.TextView;
 import com.facepp.error.FaceppParseException;
 import com.oscar.howold.utils.FaceppDetect;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -34,6 +38,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private String mCurrentPhotoStr;
 
     private Bitmap mPhotoImg;
+
+    private Paint mPaint;//画笔
 
 
 
@@ -67,6 +73,47 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     private void preparedRsBitmap(JSONObject jsonObject) {
+        Bitmap bitmap = Bitmap.createBitmap(mPhotoImg.getWidth(), mPhotoImg.getHeight(), mPhotoImg.getConfig());
+        Canvas canvas = new Canvas(bitmap);
+        canvas.drawBitmap(mPhotoImg, 0, 0, null);
+
+        try {
+            JSONArray faces = jsonObject.getJSONArray("face");
+            int faceCount = faces.length();//总共多少张脸
+            mTvTip.setText("Find:" + faceCount);
+            for(int i=0; i<faceCount; i++) {
+                JSONObject faceObj = faces.getJSONObject(i);
+                JSONObject positionJsonObj = faceObj.getJSONObject("position");
+                float x = (float) positionJsonObj.getJSONObject("center").getDouble("x");
+                float y = (float) positionJsonObj.getJSONObject("center").getDouble("y");
+
+                float w = (float) positionJsonObj.getDouble("width");
+                float h = (float) positionJsonObj.getDouble("height");
+
+                x = x / 100 * bitmap.getWidth();
+                y = y / 100 * bitmap.getHeight();
+
+                w = w / 100 * bitmap.getWidth();
+                h = h / 100 * bitmap.getHeight();
+
+
+                mPaint.setColor(0xffffffff);
+                mPaint.setStrokeWidth(3);
+
+                canvas.drawLine(x - w / 2, y - h / 2, x - w / 2, y + h / 2, mPaint);
+                canvas.drawLine(x - w / 2, y - h / 2, x + w / 2, y - h / 2, mPaint);
+                canvas.drawLine(x + w / 2, y - h / 2, x + w / 2, y + h / 2, mPaint);
+                canvas.drawLine(x - w / 2, y + h / 2, x + w / 2, y + h / 2, mPaint);
+
+                mPhotoImg = bitmap;
+
+            }
+
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
@@ -75,6 +122,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mPaint = new Paint();
         initViews();
 
         initEvents();
