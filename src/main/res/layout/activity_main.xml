@@ -49,4 +49,19 @@
         android:src="@drawable/t4"
         android:layout_alignParentTop="true"
         />
+
+    <FrameLayout
+        android:id="@+id/fl_waitting"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:clickable="true"
+        >
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            />
+    </FrameLayout>
 </RelativeLayout>
