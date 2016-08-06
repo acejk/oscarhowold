@@ -105,6 +105,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 canvas.drawLine(x + w / 2, y - h / 2, x + w / 2, y + h / 2, mPaint);
                 canvas.drawLine(x - w / 2, y + h / 2, x + w / 2, y + h / 2, mPaint);
 
+                int age = faceObj.getJSONObject("attribute").getJSONObject("age").getInt("value");
+                String gender = faceObj.getJSONObject("attribute").getJSONObject("gender").getString("value");
+
+                Bitmap ageBitmap = buildAgeBitmap(age, "Male".equals(gender));
+
+                int ageWidth = ageBitmap.getWidth();
+                int ageHeight = ageBitmap.getHeight();
+
+                if(bitmap.getWidth() < mPhotoImg.getWidth() && bitmap.getHeight() < mPhotoImg.getHeight()) {
+                    float ratio = Math.max(bitmap.getWidth() * 1.0f / mPhotoImg.getWidth(), bitmap.getHeight() * 10f / mPhotoImg.getHeight());
+                    ageBitmap = Bitmap.createScaledBitmap(ageBitmap, (int) (ageWidth * ratio), (int) (ageHeight * ratio), false);
+                }
+
+                canvas.drawBitmap(ageBitmap, x - ageBitmap.getWidth() / 2, y - h / 2 - ageBitmap.getHeight(), null);
+
+
                 mPhotoImg = bitmap;
 
             }
@@ -115,6 +131,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
 
+    }
+
+    private Bitmap buildAgeBitmap(int age, boolean isMale) {
+        TextView tvAgeGender = (TextView) mWaitting.findViewById(R.id.tv_age_gender);
+        tvAgeGender.setText(age + "");
+        if(isMale) {
+            tvAgeGender.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.male), null, null, null);
+        } else {
+            tvAgeGender.setCompoundDrawablesWithIntrinsicBounds(getResources().getDrawable(R.drawable.female), null, null, null);
+        }
+
+        tvAgeGender.setDrawingCacheEnabled(true);
+        Bitmap bitmap = Bitmap.createBitmap(tvAgeGender.getDrawingCache());
+        tvAgeGender.destroyDrawingCache();
+        return bitmap;
     }
 
     @Override
@@ -184,6 +215,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             case R.id.btn_detect:
                 mWaitting.setVisibility(View.VISIBLE);
+
+                if(mCurrentPhotoStr != null && !mCurrentPhotoStr.trim().equals("")) {
+                    resizePhoto();
+                } else {
+                    mPhotoImg = BitmapFactory.decodeResource(getResources(), R.drawable.t4);
+                }
 
                 FaceppDetect.detect(mPhotoImg, new FaceppDetect.CallBack() {
                     @Override
