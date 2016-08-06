@@ -5,26 +5,70 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.facepp.error.FaceppParseException;
+import com.oscar.howold.utils.FaceppDetect;
+
+import org.json.JSONObject;
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    public static final int MSG_SUCCESS = 0x111;
+    public static final int MSG_ERROR = 0X112;
     private static final int PICK_CODE = 0X110;
     private ImageView mIvPhoto;
     private Button mBtnGetImage;
     private Button mBtnDetect;
     private TextView mTvTip;
+    private View mWaitting;
 
     private String mCurrentPhotoStr;
 
     private Bitmap mPhotoImg;
 
 
+
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_SUCCESS:
+                    mWaitting.setVisibility(View.GONE);
+                    JSONObject jsonObject = (JSONObject) msg.obj;
+
+                    preparedRsBitmap(jsonObject);
+
+                    mIvPhoto.setImageBitmap(mPhotoImg);
+
+                    break;
+                case MSG_ERROR:
+                    mWaitting.setVisibility(View.GONE);
+
+                    String errorMsg = (String) msg.obj;
+                    if(TextUtils.isEmpty(errorMsg)) {
+                        mTvTip.setText("Error");
+                    } else {
+                        mTvTip.setText(errorMsg);
+                    }
+                    break;
+            }
+
+            super.handleMessage(msg);
+        }
+    };
+
+    private void preparedRsBitmap(JSONObject jsonObject) {
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mBtnDetect = (Button) findViewById(R.id.btn_detect);
         mBtnGetImage = (Button) findViewById(R.id.btn_getImage);
         mTvTip = (TextView) findViewById(R.id.tv_tip);
+        mWaitting = findViewById(R.id.fl_waitting);
     }
 
     @Override
@@ -90,7 +135,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivityForResult(intent, PICK_CODE);
                 break;
             case R.id.btn_detect:
+                mWaitting.setVisibility(View.VISIBLE);
 
+                FaceppDetect.detect(mPhotoImg, new FaceppDetect.CallBack() {
+                    @Override
+                    public void success(JSONObject jsonObject) {
+                        Message msg = Message.obtain();
+                        msg.what = MSG_SUCCESS;
+                        msg.obj = jsonObject;
+                        mHandler.sendMessage(msg);
+                    }
+
+                    @Override
+                    public void error(FaceppParseException e) {
+                        Message msg = Message.obtain();
+                        msg.what = MSG_ERROR;
+                        msg.obj = e.getErrorMessage();
+                        mHandler.sendMessage(msg);
+                    }
+                });
                 break;
         }
     }
